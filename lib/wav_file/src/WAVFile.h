@@ -41,5 +41,9 @@ typedef struct _wav_header
     data_header[2] = 't';
     data_header[3] = 'a';
   }
+  void setSample_rate (int sample_rate) {
+    this->sample_rate = sample_rate;
+    this->byte_rate = this->sample_rate * this->num_channels * (this->bit_depth / 8);
+  }
 } wav_header_t;
 #pragma pack(pop)

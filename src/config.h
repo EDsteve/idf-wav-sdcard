@@ -5,7 +5,7 @@
 // #define USE_SPIFFS 1
 
 // sample rate for the system
-#define SAMPLE_RATE 16000
+#define SAMPLE_RATE 44000
 
 // are you using an I2S microphone - comment this out if you want to use an analog mic and ADC input
 #define USE_I2S_MIC_INPUT
