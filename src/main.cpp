@@ -30,10 +30,28 @@ extern "C"
 
 void wait_for_button_push()
 {
+  const int STABLE_THRESHOLD = 20; 
+  const int STABLE_CHK_INTERVAL_MS = 50;
+  // wait until button is pushed (0)
   while (gpio_get_level(GPIO_BUTTON) == 1)
   {
     vTaskDelay(pdMS_TO_TICKS(100));
   }
+  int threshold = STABLE_THRESHOLD;
+  // now wait until button is released again and stable for STABLE_THRESHOLD * 50 ms
+  for (int i=10*STABLE_THRESHOLD; i!=0; i--) {
+    if (gpio_get_level(GPIO_BUTTON) == 0) {
+      threshold = STABLE_THRESHOLD;
+    }
+    else {
+      threshold--;
+    }
+    if (threshold == 0) {
+      return;
+    }
+    vTaskDelay(pdMS_TO_TICKS(STABLE_CHK_INTERVAL_MS));
+  }
+  ESP_LOGI(TAG, "Timeout while waiting for GPIO_BUTTON to be stable released! Button not stable released for %d ms", STABLE_CHK_INTERVAL_MS*STABLE_THRESHOLD);
 }
 
 void record(I2SSampler *input, const char *fname)
