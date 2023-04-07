@@ -14,6 +14,10 @@
 #include "WAVFileReader.h"
 #include "config.h"
 
+/** I2C stuff */
+#include "CPPI2C/cppi2c.h"
+#include "ELOC_IOEXP.hpp"
+
 #define SDCARD_WRITING_ENABLED  1
 #define SDCARD_BUFFER           50*1024
 
@@ -112,6 +116,7 @@ void play(Output *output, const char *fname)
   ESP_LOGI(TAG, "Finished playing");
 }
 
+
 void app_main(void)
 {
   ESP_LOGI(TAG, "Starting up");
@@ -131,6 +136,29 @@ void app_main(void)
   I2SSampler *input = new ADCSampler(ADC_UNIT_1, ADC1_CHANNEL_7, i2s_adc_config);
 #endif
   // I2SOutput *output = new I2SOutput(I2S_NUM_0, i2s_speaker_pins);
+
+  ESP_LOGI(TAG, "Setting up I2C");
+
+  static CPPI2C::I2c I2Cinstance (I2C_PORT);
+  I2Cinstance.InitMaster(I2C_SDA_PIN, I2C_SCL_PIN, I2C_SPEED_HZ);
+
+  std::vector<uint8_t> dev_addr;
+  uint32_t numI2cDevices = I2Cinstance.scan(dev_addr);
+  ESP_LOGI(TAG, "Found %lu I2C devices:", numI2cDevices);
+  for(auto it = dev_addr.begin(); it != dev_addr.end(); ++it) {
+    ESP_LOGI(TAG, "\t 0x%02X", *it);
+  }
+  static ELOC_IOEXP ioExp(I2Cinstance);
+
+  // turn on status LED on ELOC board
+  ioExp.setOutputBit(ELOC_IOEXP::LED_STATUS, true);
+  for (int i=0; i<10; i++) {
+    // toggle Battery & Status LED in oposing order with 0.5 Hz
+    ioExp.toggleOutputBit(ELOC_IOEXP::LED_STATUS);
+    ioExp.toggleOutputBit(ELOC_IOEXP::LED_BATTERY);
+    vTaskDelay(pdMS_TO_TICKS(500));
+  }
+
 
   gpio_set_direction(GPIO_BUTTON, GPIO_MODE_INPUT);
   gpio_set_pull_mode(GPIO_BUTTON, GPIO_PULLUP_ONLY);

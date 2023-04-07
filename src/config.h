@@ -44,3 +44,13 @@ extern i2s_config_t i2s_mic_Config;
 extern i2s_pin_config_t i2s_mic_pins;
 // i2s speaker pins
 extern i2s_pin_config_t i2s_speaker_pins;
+
+
+
+// are you using an I2S microphone - comment this out if you want to use an analog mic and ADC input
+#define USE_I2C
+
+#define I2C_PORT I2C_NUM_0
+#define I2C_SDA_PIN GPIO_NUM_23
+#define I2C_SCL_PIN GPIO_NUM_22
+#define I2C_SPEED_HZ 100000
