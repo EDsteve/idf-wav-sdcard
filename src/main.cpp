@@ -28,19 +28,13 @@ extern "C"
   void app_main(void);
 }
 
-void wait_for_button_push()
-{
+void wait_for_button_stable(int ioLevel) {
+  
   const int STABLE_THRESHOLD = 20; 
   const int STABLE_CHK_INTERVAL_MS = 50;
-  // wait until button is pushed (0)
-  while (gpio_get_level(GPIO_BUTTON) == 1)
-  {
-    vTaskDelay(pdMS_TO_TICKS(100));
-  }
   int threshold = STABLE_THRESHOLD;
-  // now wait until button is released again and stable for STABLE_THRESHOLD * 50 ms
   for (int i=10*STABLE_THRESHOLD; i!=0; i--) {
-    if (gpio_get_level(GPIO_BUTTON) == 0) {
+    if (gpio_get_level(GPIO_BUTTON) != ioLevel) {
       threshold = STABLE_THRESHOLD;
     }
     else {
@@ -51,7 +45,21 @@ void wait_for_button_push()
     }
     vTaskDelay(pdMS_TO_TICKS(STABLE_CHK_INTERVAL_MS));
   }
-  ESP_LOGI(TAG, "Timeout while waiting for GPIO_BUTTON to be stable released! Button not stable released for %d ms", STABLE_CHK_INTERVAL_MS*STABLE_THRESHOLD);
+  ESP_LOGI(TAG, "Timeout while waiting for GPIO_BUTTON to be stable %s! Button not stable for %d ms", 
+      ioLevel == 1 ? "HIGH" : "LOW",
+      STABLE_CHK_INTERVAL_MS*STABLE_THRESHOLD);
+  return;
+}
+
+void wait_for_button_push()
+{
+  // wait until button is pushed (0)
+  while (gpio_get_level(GPIO_BUTTON) == 1)
+  {
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }
+  // now wait until button is released again and stable
+  wait_for_button_stable(1);
 }
 
 void record(I2SSampler *input, const char *fname)
@@ -102,7 +110,11 @@ void record(I2SSampler *input, const char *fname)
 #endif
   free(samples);
   ESP_LOGI(TAG, "Finished recording");
-}
+  // wait for button to be stable high to avoid restarting recording due to glitches
+  
+  // now wait until button is released again and stable
+  wait_for_button_stable(1);
+  }
 
 void play(Output *output, const char *fname)
 {
@@ -199,6 +211,7 @@ void app_main(void)
   while (true)
   {
     // wait for the user to push and hold the button
+    ESP_LOGI(TAG, "Ready for recording...");
     wait_for_button_push();
     record(input, "/sdcard/test.wav");
     // wait for the user to push the button again
