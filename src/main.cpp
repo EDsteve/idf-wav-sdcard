@@ -13,6 +13,7 @@
 #include "WAVFileWriter.h"
 #include "WAVFileReader.h"
 #include "config.h"
+#include "Arduino.h"
 
 /** I2C stuff */
 #include "CPPI2C/cppi2c.h"
@@ -150,6 +151,8 @@ void play(Output *output, const char *fname)
 void app_main(void)
 {
   ESP_LOGI(TAG, "Starting up");
+  initArduino();
+  ESP_LOGI(TAG, "initArduino done");
 
 #ifdef USE_SPIFFS
   ESP_LOGI(TAG, "Mounting SPIFFS on /sdcard");
