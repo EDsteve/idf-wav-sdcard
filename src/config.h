@@ -1,5 +1,6 @@
 #include <freertos/FreeRTOS.h>
 #include <driver/i2s.h>
+#include "lis3dh_types.h"
 
 // save to SPIFFS instead of SD Card?
 // #define USE_SPIFFS 1
@@ -54,3 +55,11 @@ extern i2s_pin_config_t i2s_speaker_pins;
 #define I2C_SDA_PIN GPIO_NUM_23
 #define I2C_SCL_PIN GPIO_NUM_22
 #define I2C_SPEED_HZ 100000
+
+
+
+/* LIS3DH Config*/
+#define LIS3DH_INT_PIN GPIO_NUM_12
+extern lis3dh_config_t lis3dh_config;
+extern lis3dh_int_click_config_t lis3dh_click_config;
+

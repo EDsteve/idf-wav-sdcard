@@ -13,10 +13,12 @@
 #include "WAVFileWriter.h"
 #include "WAVFileReader.h"
 #include "config.h"
+#include "ManualWakeup.hpp"
 
 /** I2C stuff */
 #include "CPPI2C/cppi2c.h"
 #include "ELOC_IOEXP.hpp"
+#include "lis3dh.h"
 
 #define SDCARD_WRITING_ENABLED  1
 #define SDCARD_BUFFER           50*1024
@@ -179,7 +181,6 @@ void app_main(void)
     ESP_LOGI(TAG, "\t 0x%02X", *it);
   }
   static ELOC_IOEXP ioExp(I2Cinstance);
-
   // turn on status LED on ELOC board
   ioExp.setOutputBit(ELOC_IOEXP::LED_STATUS, true);
   for (int i=0; i<10; i++) {
@@ -188,6 +189,11 @@ void app_main(void)
     ioExp.toggleOutputBit(ELOC_IOEXP::LED_BATTERY);
     vTaskDelay(pdMS_TO_TICKS(500));
   }
+ 
+
+  ESP_LOGI(TAG, "Creating LIS3DH instance...");
+  if (esp_err_t err = ManualWakeupConfig(I2Cinstance)) ESP_LOGI(TAG, "ManualWakeupConfig %s", esp_err_to_name(err));
+
 
 
   gpio_set_direction(GPIO_BUTTON, GPIO_MODE_INPUT);
