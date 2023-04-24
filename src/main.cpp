@@ -24,6 +24,130 @@
 #define SDCARD_BUFFER           50*1024
 
 static const char *TAG = "main";
+#define EDGE_IMPLUSE
+
+#ifdef EDGE_IMPLUSE
+#include "edge-impulse-sdk/classifier/ei_run_classifier.h"
+// Callback function declaration
+static int get_signal_data(size_t offset, size_t length, float *out_ptr);
+
+// Raw features copied from test sample (Edge Impulse > Model testing)
+static float input_buf[10000] = {0.0,};
+static size_t inpu_buf_len = 0;
+
+int detect_elephant_sound_continuose(float* rec_buffer, size_t buf_size)
+{
+  signal_t signal;            // Wrapper for raw singla input
+  ei_impulse_result_t result; // Used to store the inference result
+  EI_IMPULSE_ERROR res;       // Return the code from inference
+
+  // Assign call back function to fill buffer used for preprocessing/inference
+  size_t buf_len = buf_size / sizeof(float);
+
+  // copy recording buffer to input buffer
+  memcpy(input_buf+inpu_buf_len, rec_buffer, buf_size);
+  ESP_LOGI(TAG, "input buffer len %d\r\n", inpu_buf_len);
+
+  // increase input buffer length
+  inpu_buf_len += buf_len;
+
+  if (inpu_buf_len >= 8000)
+  {
+    signal.total_length = inpu_buf_len;
+    signal.get_data = &get_signal_data;
+
+
+    // Perform DSP pre-processing and inference
+    res = run_classifier_continuous(&signal, &result, false);
+    //run_classifier_continuous();
+
+    // Print return code and how long it took to perform inference
+    ESP_LOGI(TAG, "run_classifier returned %d\r\n", res);
+    ESP_LOGI(TAG, "Timing: DSP %d ms, inference %d ms, anomely %d ms\r\n",
+            result.timing.dsp,
+            result.timing.classification,
+            result.timing.anomaly);
+    
+    // print the prediction result
+    ESP_LOGI(TAG, "Predictions:\r\n");
+    if (result.classification[1].value >= 0.8)
+    {
+      ESP_LOGI(TAG, "  %s: ", ei_classifier_inferencing_categories[1]);
+    }
+    else{
+      ESP_LOGI(TAG, "  %s: ", ei_classifier_inferencing_categories[0]);
+    }
+    /*
+    for (uint16_t i=0; i < EI_CLASSIFIER_LABEL_COUNT; i++)
+    {
+      ESP_LOGI(TAG, "  %s: ", ei_classifier_inferencing_categories[i]);
+      ESP_LOGI(TAG, "%.5f\r\n", result.classification[i].value);
+    }
+    */
+    inpu_buf_len = 0;
+  }
+
+
+  return 0;
+}
+
+
+
+int detect_elephant_sound(float* rec_buffer, size_t buf_len)
+{
+  signal_t signal;            // Wrapper for raw singla input
+  ei_impulse_result_t result; // Used to store the inference result
+  EI_IMPULSE_ERROR res;       // Return the code from inference
+
+  // Calculate the length of the buffer
+  //size_t buf_len = sizeof(input_buf) / sizeof(input_buf[0]);
+
+  // Make sure that the length of the buffer matches the expected input length
+  if (buf_len != EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE)
+  {
+    printf("ERROR: the length of the buffer is incorrect.\r\n");
+    printf("Expected %d items, but got %d\r\n", 
+    EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE, 
+    (int)buf_len);
+    return 1;
+  }
+
+  // Assign call back function to fill buffer used for preprocessing/inference
+  signal.total_length = EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE;
+  signal.get_data = &get_signal_data;
+
+  // Perform DSP pre-processing and inference
+  res = run_classifier(&signal, &result, false);
+  //run_classifier_continuous();
+
+  // Print return code and how long it took to perform inference
+  ESP_LOGI(TAG, "run_classifier returned %d\r\n", res);
+  ESP_LOGI(TAG, "TimiTAG, ng: DSP %d ms, inference %d ms, anomely %d ms\r\n",
+          result.timing.dsp,
+          result.timing.classification,
+          result.timing.anomaly);
+  
+  // print the prediction result
+  ESP_LOGI(TAG, "Predictions:\r\n");
+  for (uint16_t i=0; i < EI_CLASSIFIER_LABEL_COUNT; i++)
+  {
+    ESP_LOGI(TAG, "  %s: ", ei_classifier_inferencing_categories[i]);
+    ESP_LOGI(TAG, "%.5f\r\n", result.classification[i].value);
+  }
+
+  return 0;
+}
+
+// Callback: fill a section of out_ptr buffer when requested
+static int get_signal_data(size_t offset, size_t length, float *out_ptr)
+{
+  for (size_t i=0; i<length; i++){
+    out_ptr[i] = (input_buf + offset)[i];
+  }
+
+  return EIDSP_OK;
+}
+#endif
 
 extern "C"
 {
@@ -81,9 +205,15 @@ void record(I2SSampler *input, const char *fname)
   WAVFileWriter *writer = new WAVFileWriter(fp, input->sample_rate());
 #endif
   // keep writing until the user releases the button
+  float rec_buffer[256] = {0,};
   while (1)
   {
     int samples_read = input->read(&samples[idx], 1024);
+#ifdef EDGE_IMPLUSE
+    //int samples_read = input->read((int16_t*)rec_buffer, 1024);
+    memcpy(rec_buffer, &samples[idx], 1024);
+    //detect_elephant_sound_continuose(rec_buffer, 1024);
+#endif
     idx += 1024;
     // int64_t start = esp_timer_get_time();
 #ifdef SDCARD_WRITING_ENABLED
