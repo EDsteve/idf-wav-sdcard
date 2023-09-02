@@ -19,7 +19,7 @@
 #include "ELOC_IOEXP.hpp"
 
 #define SDCARD_WRITING_ENABLED  1
-#define SDCARD_BUFFER           50*1024
+#define SDCARD_BUFFER           16*1000
 
 static const char *TAG = "main";
 
@@ -79,15 +79,21 @@ void record(I2SSampler *input, const char *fname)
   WAVFileWriter *writer = new WAVFileWriter(fp, input->sample_rate());
 #endif
   // keep writing until the user releases the button
+  
+  long loopCounter=0;
+  int loops= 60.0/(((float)SDCARD_BUFFER)/((float)i2s_mic_Config.sample_rate)) ;
   while (1)
   {
-    int samples_read = input->read(&samples[idx], 1024);
-    idx += 1024;
+    int samples_read = input->read(&samples[idx], 1000);
+    idx += 1000;
     // int64_t start = esp_timer_get_time();
 #ifdef SDCARD_WRITING_ENABLED
     if (idx == (SDCARD_BUFFER)) {
+      ESP_LOGI(TAG, "read samples.... done");
       writer->write(samples, idx);
       idx = 0;
+      loopCounter++;
+      if (loopCounter >= loops) break;
     }
 #endif
     // int64_t end = esp_timer_get_time();
