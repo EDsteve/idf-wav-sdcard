@@ -54,9 +54,19 @@ void wait_for_button_stable(int ioLevel) {
 void wait_for_button_push()
 {
   // wait until button is pushed (0)
+  int i=0;
   while (gpio_get_level(GPIO_BUTTON) == 1)
   {
     vTaskDelay(pdMS_TO_TICKS(100));
+    // i++;
+    // if ((i % 300)== 0) {
+    //   ESP_LOGI(TAG, "getTime");
+    //   char timeStr[64] = {};
+    //   tm timeinfo;
+    //   getLocalTime(&timeinfo);
+    //   strftime(timeStr, sizeof(timeStr), "%F_%H_%M_%S", &timeinfo);
+    //   ESP_LOGI(TAG, "Time: %s", timeStr);
+    // }
   }
   // now wait until button is released again and stable
   wait_for_button_stable(1);
@@ -90,7 +100,7 @@ void record(I2SSampler *input, const char *fname)
 #ifdef SDCARD_WRITING_ENABLED
     if (idx == (SDCARD_BUFFER)) {
       ESP_LOGI(TAG, "read samples.... done");
-      writer->write(samples, idx);
+      //writer->write(samples, idx);
       idx = 0;
       loopCounter++;
       if (loopCounter >= loops) break;
@@ -101,7 +111,7 @@ void record(I2SSampler *input, const char *fname)
 
     if (gpio_get_level(GPIO_BUTTON) == 0) {
 #ifdef SDCARD_WRITING_ENABLED
-      writer->write(samples, idx);
+      //writer->write(samples, idx);
 #endif
       break;
     }
@@ -152,10 +162,24 @@ void play(Output *output, const char *fname)
   ESP_LOGI(TAG, "Finished playing");
 }
 
+#ifndef BUILDDATE
+#define BUILDDATE  __DATE__ " " __TIME__""
+#endif
+void initTime() {
+    struct tm tm;
+    strptime(BUILDDATE, "%b %d %Y %H:%M:%S %Y", &tm);
+    time_t timeSinceEpoch = mktime(&tm);
+    struct timeval tv;
+    tv.tv_sec = timeSinceEpoch;  // epoch time (seconds)
+    tv.tv_usec = 0;    // microseconds
+    settimeofday(&tv, NULL);
+    ESP_LOGI(TAG, "Setting initial time to build date: %s", BUILDDATE);
+}
 
 void app_main(void)
 {
   ESP_LOGI(TAG, "Starting up");
+  initTime();
 
 #ifdef USE_SPIFFS
   ESP_LOGI(TAG, "Mounting SPIFFS on /sdcard");
