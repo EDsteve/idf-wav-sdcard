@@ -24,6 +24,8 @@
 
 static const char *TAG = "main";
 
+#define GPIO_OUTPUT GPIO_NUM_27
+
 extern "C"
 {
   void app_main(void);
@@ -56,9 +58,16 @@ void wait_for_button_push()
 {
   // wait until button is pushed (0)
   int i=0;
+  uint32_t ioval=0;
   while (gpio_get_level(GPIO_BUTTON) == 1)
   {
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(100)); 
+    // i++;
+    // if ((i%10)==0) {
+    //   ioval = ioval ? 0 : 1;
+    //   ESP_LOGI(TAG, "setting gpio %d", ioval);
+    //   gpio_set_level(GPIO_OUTPUT, ioval);
+    // }
     // i++;
     // if ((i % 300)== 0) {
     //   ESP_LOGI(TAG, "getTime");
@@ -69,6 +78,7 @@ void wait_for_button_push()
     //   ESP_LOGI(TAG, "Time: %s", timeStr);
     // }
   }
+  // gpio_set_level(GPIO_OUTPUT, 0);
   // now wait until button is released again and stable
   wait_for_button_stable(1);
 }
@@ -89,6 +99,7 @@ void record(I2SSampler *input, const char *fname)
   // }
   //esp_pm_lock_acquire(pm_lock_handle);
   ESP_LOGI(TAG, "Start recording");
+  gpio_set_level(GPIO_OUTPUT, 1);
   input->start();
 #ifdef SDCARD_WRITING_ENABLED
   // open the file on the sdcard
@@ -133,6 +144,7 @@ void record(I2SSampler *input, const char *fname)
   delete writer;
 #endif
   free(samples);
+  gpio_set_level(GPIO_OUTPUT, 0);
   ESP_LOGI(TAG, "Finished recording");
 
   //esp_pm_lock_release(pm_lock_handle);
@@ -248,12 +260,18 @@ void app_main(void)
   gpio_sleep_sel_dis(I2S_MIC_LEFT_RIGHT_CLOCK);
   gpio_sleep_sel_dis(I2S_MIC_SERIAL_DATA);
 
+
     esp_pm_config_esp32_t cfg = {
         .max_freq_mhz = 80,
         .min_freq_mhz = 80,
         .light_sleep_enable = true
     };
+    ESP_LOGI(TAG, "enabling PM");
     esp_pm_configure(&cfg);
+    
+  gpio_set_direction(GPIO_OUTPUT, GPIO_MODE_OUTPUT);
+  gpio_sleep_sel_dis(GPIO_OUTPUT);
+  gpio_set_level(GPIO_OUTPUT, 0);
 
   while (true)
   {
