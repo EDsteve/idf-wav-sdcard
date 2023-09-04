@@ -81,6 +81,13 @@ void record(I2SSampler *input, const char *fname)
     ESP_LOGI(TAG, "Cannot allocate buffer");
     return;
   }
+  ESP_LOGI(TAG, "Setting PM lock");
+  // esp_pm_lock_type_t pm_lock = ESP_PM_APB_FREQ_MAX;
+  // esp_pm_lock_handle_t pm_lock_handle = NULL;
+  // if (esp_pm_lock_create(pm_lock, 0, "i2s_driver", &pm_lock_handle) != ESP_OK) {
+  //   ESP_LOGE(TAG, "I2S pm lock error");
+  // }
+  //esp_pm_lock_acquire(pm_lock_handle);
   ESP_LOGI(TAG, "Start recording");
   input->start();
 #ifdef SDCARD_WRITING_ENABLED
@@ -127,6 +134,13 @@ void record(I2SSampler *input, const char *fname)
 #endif
   free(samples);
   ESP_LOGI(TAG, "Finished recording");
+
+  //esp_pm_lock_release(pm_lock_handle);
+    // if (pm_lock_handle) {
+    //     esp_pm_lock_delete(pm_lock_handle);
+    //     pm_lock_handle = NULL;
+    // }
+
   // wait for button to be stable high to avoid restarting recording due to glitches
   
   // now wait until button is released again and stable
@@ -236,7 +250,7 @@ void app_main(void)
 
     esp_pm_config_esp32_t cfg = {
         .max_freq_mhz = 80,
-        .min_freq_mhz = 10,
+        .min_freq_mhz = 80,
         .light_sleep_enable = true
     };
     esp_pm_configure(&cfg);
