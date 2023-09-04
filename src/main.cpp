@@ -230,7 +230,7 @@ void app_main(void)
 
   std::vector<uint8_t> dev_addr;
   uint32_t numI2cDevices = I2Cinstance.scan(dev_addr);
-  ESP_LOGI(TAG, "Found %lu I2C devices:", numI2cDevices);
+  ESP_LOGI(TAG, "Found %u I2C devices:", numI2cDevices);
   for(auto it = dev_addr.begin(); it != dev_addr.end(); ++it) {
     ESP_LOGI(TAG, "\t 0x%02X", *it);
   }
@@ -260,7 +260,7 @@ void app_main(void)
 
     esp_pm_config_esp32_t cfg = {
         .max_freq_mhz = 80,
-        .min_freq_mhz = 80,
+        .min_freq_mhz = 10,
         .light_sleep_enable = true
     };
     ESP_LOGI(TAG, "enabling PM");
